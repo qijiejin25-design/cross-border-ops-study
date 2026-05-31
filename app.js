@@ -1,4 +1,4 @@
-const storageKey = "crossBorderOpsStudy.v1";
+const storageKey = "crossBorderOpsStudy.v2";
 
 const state = loadState();
 const data = window.KB_DATA;
@@ -19,9 +19,20 @@ const els = {
   dailyNote: document.querySelector("#dailyNote"),
   saveState: document.querySelector("#saveState"),
   readingPreview: document.querySelector("#readingPreview"),
+  quizPreview: document.querySelector("#quizPreview"),
   chapterList: document.querySelector("#chapterList"),
   chapterReader: document.querySelector("#chapterReader"),
   planGrid: document.querySelector("#planGrid"),
+  quizQuestionTitle: document.querySelector("#quizQuestionTitle"),
+  quizMeta: document.querySelector("#quizMeta"),
+  quizCategory: document.querySelector("#quizCategory"),
+  quizQuestion: document.querySelector("#quizQuestion"),
+  quizAnswer: document.querySelector("#quizAnswer"),
+  quizFeedback: document.querySelector("#quizFeedback"),
+  quizDoneCount: document.querySelector("#quizDoneCount"),
+  quizAvgScore: document.querySelector("#quizAvgScore"),
+  quizTotalCount: document.querySelector("#quizTotalCount"),
+  quizHistory: document.querySelector("#quizHistory"),
   interviewReader: document.querySelector("#interviewReader"),
   termsReader: document.querySelector("#termsReader"),
   searchInput: document.querySelector("#searchInput"),
@@ -81,6 +92,37 @@ function bindActions() {
     showView("chapters");
   });
 
+  document.querySelector("#startQuizBtn").addEventListener("click", () => {
+    showView("quiz");
+  });
+
+  document.querySelector("#nextQuestionBtn").addEventListener("click", () => {
+    pickNextQuestion();
+    renderQuiz();
+  });
+
+  document.querySelector("#submitAnswerBtn").addEventListener("click", () => {
+    submitQuizAnswer(false);
+  });
+
+  document.querySelector("#showAnswerBtn").addEventListener("click", () => {
+    submitQuizAnswer(true);
+  });
+
+  document.querySelector("#resetQuizBtn").addEventListener("click", () => {
+    state.quiz = getInitialQuizState();
+    saveState();
+    renderQuiz();
+  });
+
+  els.quizCategory.addEventListener("change", () => {
+    state.quiz.category = els.quizCategory.value;
+    state.quiz.currentId = "";
+    pickNextQuestion();
+    saveState();
+    renderQuiz();
+  });
+
   document.querySelector("#exportBtn").addEventListener("click", exportRecords);
 
   els.dailyNote.addEventListener("input", () => {
@@ -99,6 +141,7 @@ function renderAll() {
   renderDashboard();
   renderChapters();
   renderPlan();
+  renderQuiz();
   renderFocusReaders();
 }
 
@@ -106,9 +149,10 @@ function showView(view) {
   currentView = view;
   activateView(view);
   els.pageTitle.textContent = {
-    dashboard: "今日学习",
+    dashboard: "今日冲刺",
+    quiz: "互动面试",
     chapters: "知识章节",
-    plan: "30 天计划",
+    plan: "7 天计划",
     interview: "面试速背",
     terms: "术语表",
     search: "搜索结果",
@@ -169,6 +213,10 @@ function renderDashboard() {
 
   const chapter = getRecommendedChapter(currentDay);
   els.readingPreview.innerHTML = `<strong>${escapeHtml(chapter.title)}</strong><p>${escapeHtml(makeExcerpt(chapter.markdown, 180))}</p>`;
+  const suggested = getSuggestedQuestions(3);
+  els.quizPreview.innerHTML = suggested
+    .map((item) => `<p><strong>${escapeHtml(item.category)}</strong>：${escapeHtml(item.question)}</p>`)
+    .join("");
 }
 
 function renderChapters() {
@@ -185,6 +233,143 @@ function renderChapters() {
 
   const chapter = data.chapters.find((item) => item.id === activeChapterId) || data.chapters[0];
   els.chapterReader.innerHTML = renderMarkdown(chapter.markdown);
+}
+
+function renderQuiz() {
+  ensureQuizState();
+  renderQuizCategories();
+  const question = getCurrentQuestion();
+  if (!question) {
+    els.quizQuestion.textContent = "没有找到这个分类的题目。";
+    return;
+  }
+
+  els.quizQuestionTitle.textContent = `${question.category} · ${question.level}`;
+  els.quizMeta.textContent = `第 ${getQuestionIndex(question) + 1} 题 / 共 ${getFilteredQuestions().length} 题`;
+  els.quizQuestion.innerHTML = `<p>${escapeHtml(question.question)}</p>`;
+  els.quizAnswer.value = state.quiz.draft || "";
+  els.quizFeedback.innerHTML = state.quiz.feedback || "";
+  els.quizTotalCount.textContent = data.interviewQuestions.length;
+  const records = state.quiz.records || [];
+  els.quizDoneCount.textContent = records.length;
+  const avg = records.length ? Math.round(records.reduce((sum, item) => sum + item.score, 0) / records.length) : 0;
+  els.quizAvgScore.textContent = `${avg}%`;
+  els.quizHistory.innerHTML =
+    records
+      .slice(-8)
+      .reverse()
+      .map((record) => `<div class="history-item">
+        <strong>${record.score}%</strong>
+        <span>${escapeHtml(record.category)}：${escapeHtml(record.question)}</span>
+      </div>`)
+      .join("") || `<p class="muted-text">还没有刷题记录。先回答一题。</p>`;
+
+  els.quizAnswer.oninput = () => {
+    state.quiz.draft = els.quizAnswer.value;
+    saveState();
+  };
+}
+
+function renderQuizCategories() {
+  const categories = ["全部", ...new Set(data.interviewQuestions.map((item) => item.category))];
+  if (!els.quizCategory.options.length) {
+    els.quizCategory.innerHTML = categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("");
+  }
+  els.quizCategory.value = state.quiz.category || "全部";
+}
+
+function submitQuizAnswer(showOnly) {
+  ensureQuizState();
+  const question = getCurrentQuestion();
+  if (!question) return;
+  const answer = els.quizAnswer.value.trim();
+  const result = scoreAnswer(answer, question, showOnly);
+  const missing = result.missing.length ? `<p><strong>还可以补：</strong>${result.missing.map(escapeHtml).join("、")}</p>` : "";
+  const points = question.points.map((point) => `<li>${escapeHtml(point)}</li>`).join("");
+  const answerBlock = `<div class="answer-card">
+    <div class="score-line"><strong>${showOnly ? "标准答案" : `覆盖度 ${result.score}%`}</strong><span>${escapeHtml(result.label)}</span></div>
+    <p><strong>参考答案：</strong>${escapeHtml(question.standard)}</p>
+    <p><strong>得分要点：</strong></p>
+    <ul>${points}</ul>
+    ${missing}
+  </div>`;
+  state.quiz.feedback = answerBlock;
+  state.quiz.records ||= [];
+  state.quiz.records.push({
+    question: question.question,
+    category: question.category,
+    score: result.score,
+    date: todayString(),
+  });
+  state.quiz.records = state.quiz.records.slice(-80);
+  saveState();
+  renderQuiz();
+}
+
+function scoreAnswer(answer, question, showOnly) {
+  if (showOnly) return { score: 0, label: "先看答案，再用自己的话复述一遍。", missing: question.keywords };
+  if (!answer) return { score: 0, label: "先写答案再提交。面试时不能空着。", missing: question.keywords };
+  const normalized = answer.toLowerCase();
+  const matched = question.keywords.filter((keyword) => normalized.includes(keyword.toLowerCase()));
+  const score = Math.round((matched.length / question.keywords.length) * 100);
+  let label = "需要补结构和关键词";
+  if (score >= 80) label = "可以用于面试，注意表达更自然";
+  else if (score >= 55) label = "方向对，但要补关键点";
+  return {
+    score,
+    label,
+    missing: question.keywords.filter((keyword) => !matched.includes(keyword)),
+  };
+}
+
+function pickNextQuestion() {
+  ensureQuizState();
+  const questions = getFilteredQuestions();
+  if (!questions.length) return;
+  const currentIndex = Math.max(0, questions.findIndex((item) => item.id === state.quiz.currentId));
+  const next = questions[(currentIndex + 1) % questions.length];
+  state.quiz.currentId = next.id;
+  state.quiz.draft = "";
+  state.quiz.feedback = "";
+  saveState();
+}
+
+function getCurrentQuestion() {
+  ensureQuizState();
+  const questions = getFilteredQuestions();
+  if (!questions.length) return null;
+  let current = questions.find((item) => item.id === state.quiz.currentId);
+  if (!current) {
+    current = questions[0];
+    state.quiz.currentId = current.id;
+    saveState();
+  }
+  return current;
+}
+
+function getQuestionIndex(question) {
+  return getFilteredQuestions().findIndex((item) => item.id === question.id);
+}
+
+function getFilteredQuestions() {
+  const category = state.quiz?.category || "全部";
+  const questions = data.interviewQuestions.map((item, index) => ({ ...item, id: `${item.category}-${index}` }));
+  if (category === "全部") return questions;
+  return questions.filter((item) => item.category === category);
+}
+
+function getSuggestedQuestions(count) {
+  const categoriesByDay = {
+    1: ["基础指标", "跨境链路"],
+    2: ["平台对比", "Amazon", "Shopee/eBay"],
+    3: ["TikTok", "内容策略"],
+    4: ["选品", "用户画像"],
+    5: ["数据诊断"],
+    6: ["案例题", "行为面试"],
+    7: ["综合模拟", "高压追问", "英文表达"],
+  };
+  const categories = categoriesByDay[currentDay] || ["基础指标"];
+  return data.interviewQuestions.filter((item) => categories.includes(item.category)).slice(0, count);
 }
 
 function renderPlan() {
@@ -256,11 +441,13 @@ function renderSearch(query) {
 }
 
 function getRecommendedChapter(day) {
-  if (day <= 3) return findChapter("基础框架") || data.chapters[1];
-  if (day <= 7) return findChapter("数据分析") || data.chapters[2];
-  if (day <= 14) return findChapter("TikTok") || data.chapters[3];
-  if (day <= 21) return findChapter("平台经营") || data.chapters[4];
-  return findChapter("面试题库") || data.chapters[8];
+  if (day === 1) return findChapter("基础框架") || data.chapters[1];
+  if (day === 2) return findChapter("平台经营") || data.chapters[4];
+  if (day === 3) return findChapter("TikTok") || data.chapters[3];
+  if (day === 4) return findChapter("SOP") || data.chapters[6];
+  if (day === 5) return findChapter("数据分析") || data.chapters[2];
+  if (day === 6) return findChapter("案例分析") || data.chapters[7];
+  return findChapter("7 天速成") || findChapter("面试题库") || data.chapters[8];
 }
 
 function findChapter(keyword) {
@@ -278,7 +465,7 @@ function getDayProgress(dayNumber) {
 
 function getSuggestedDay() {
   const firstIncomplete = data?.days?.find((day) => !state.days?.[day.day]?.completed);
-  return firstIncomplete?.day || 30;
+  return firstIncomplete?.day || data.days.length;
 }
 
 function getStreak() {
@@ -427,10 +614,26 @@ function makeExcerpt(markdown, length) {
 function loadState() {
   try {
     const parsed = JSON.parse(localStorage.getItem(storageKey));
-    return { days: {}, ...parsed };
+    return { days: {}, quiz: getInitialQuizState(), ...parsed };
   } catch {
-    return { days: {}, currentDay: 1 };
+    return { days: {}, currentDay: 1, quiz: getInitialQuizState() };
   }
+}
+
+function ensureQuizState() {
+  state.quiz ||= getInitialQuizState();
+  state.quiz.category ||= "全部";
+  state.quiz.records ||= [];
+}
+
+function getInitialQuizState() {
+  return {
+    category: "全部",
+    currentId: "",
+    draft: "",
+    feedback: "",
+    records: [],
+  };
 }
 
 function saveState() {
@@ -456,4 +659,3 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-
