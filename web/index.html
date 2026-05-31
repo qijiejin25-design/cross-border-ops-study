@@ -13,14 +13,14 @@
           <div class="brand-mark">跨</div>
           <div>
             <h1>跨境运营知识库</h1>
-            <p>离线学习 · 每日打卡 · 面试复习</p>
+            <p>7 天速成 · 互动面试 · 每日打卡</p>
           </div>
         </div>
 
         <div class="progress-card">
           <div class="progress-top">
-            <span>30 天进度</span>
-            <strong id="progressText">0/30</strong>
+            <span>7 天冲刺进度</span>
+            <strong id="progressText">0/7</strong>
           </div>
           <div class="progress-bar" aria-label="学习进度">
             <span id="progressFill"></span>
@@ -32,9 +32,10 @@
         </div>
 
         <nav class="nav-section" aria-label="主导航">
-          <button class="nav-item active" data-view="dashboard">今日学习</button>
+          <button class="nav-item active" data-view="dashboard">今日冲刺</button>
+          <button class="nav-item" data-view="plan">7 天计划</button>
+          <button class="nav-item" data-view="quiz">互动面试</button>
           <button class="nav-item" data-view="chapters">知识章节</button>
-          <button class="nav-item" data-view="plan">30 天计划</button>
           <button class="nav-item" data-view="interview">面试速背</button>
           <button class="nav-item" data-view="terms">术语表</button>
         </nav>
@@ -48,8 +49,8 @@
       <main class="main">
         <header class="topbar">
           <div>
-            <p class="eyebrow">从零基础到可面试</p>
-            <h2 id="pageTitle">今日学习</h2>
+            <p class="eyebrow">7 天冲刺到可面试</p>
+            <h2 id="pageTitle">今日冲刺</h2>
           </div>
           <div class="top-actions">
             <button id="resetTodayBtn" class="ghost-btn" type="button">回到今天</button>
@@ -60,7 +61,7 @@
         <section id="dashboardView" class="view active-view">
           <div class="hero-panel">
             <div>
-              <p class="eyebrow">今日任务</p>
+              <p class="eyebrow">今日冲刺任务</p>
               <h3 id="todayTitle">Day 1</h3>
               <p id="todaySubtitle">每天只做一小步，但必须有输出。</p>
             </div>
@@ -101,6 +102,14 @@
             </div>
             <div id="readingPreview" class="reading-preview"></div>
           </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h3>今日面试训练</h3>
+              <button id="startQuizBtn" class="small-btn" type="button">开始刷题</button>
+            </div>
+            <div id="quizPreview" class="reading-preview"></div>
+          </section>
         </section>
 
         <section id="chaptersView" class="view">
@@ -112,6 +121,43 @@
 
         <section id="planView" class="view">
           <div id="planGrid" class="plan-grid"></div>
+        </section>
+
+        <section id="quizView" class="view">
+          <div class="quiz-layout">
+            <section class="panel quiz-card">
+              <div class="panel-head">
+                <div>
+                  <h3 id="quizQuestionTitle">面试题</h3>
+                  <p id="quizMeta" class="muted-text">选择分类后开始回答</p>
+                </div>
+                <div class="quiz-actions">
+                  <select id="quizCategory" aria-label="题目分类"></select>
+                  <button id="nextQuestionBtn" class="small-btn" type="button">换一题</button>
+                </div>
+              </div>
+              <div id="quizQuestion" class="quiz-question"></div>
+              <textarea id="quizAnswer" class="quiz-answer" placeholder="在这里输入你的回答。建议按：定义/判断 -> 原因 -> 动作 -> 结果 结构作答。"></textarea>
+              <div class="quiz-submit-row">
+                <button id="submitAnswerBtn" class="primary-btn" type="button">提交答案并看解析</button>
+                <button id="showAnswerBtn" class="ghost-btn" type="button">直接看标准答案</button>
+              </div>
+              <div id="quizFeedback" class="quiz-feedback"></div>
+            </section>
+
+            <aside class="panel">
+              <div class="panel-head">
+                <h3>刷题统计</h3>
+                <button id="resetQuizBtn" class="small-btn" type="button">重置</button>
+              </div>
+              <div class="quiz-stats">
+                <div><span>已练题目</span><strong id="quizDoneCount">0</strong></div>
+                <div><span>平均覆盖</span><strong id="quizAvgScore">0%</strong></div>
+                <div><span>题库数量</span><strong id="quizTotalCount">0</strong></div>
+              </div>
+              <div id="quizHistory" class="quiz-history"></div>
+            </aside>
+          </div>
         </section>
 
         <section id="interviewView" class="view">
@@ -142,4 +188,3 @@
     <script src="./app.js"></script>
   </body>
 </html>
-
