@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>跨境运营自学打卡知识库</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">跨</div>
+          <div>
+            <h1>跨境运营知识库</h1>
+            <p>离线学习 · 每日打卡 · 面试复习</p>
+          </div>
+        </div>
+
+        <div class="progress-card">
+          <div class="progress-top">
+            <span>30 天进度</span>
+            <strong id="progressText">0/30</strong>
+          </div>
+          <div class="progress-bar" aria-label="学习进度">
+            <span id="progressFill"></span>
+          </div>
+          <div class="streak-row">
+            <span>连续打卡</span>
+            <strong id="streakText">0 天</strong>
+          </div>
+        </div>
+
+        <nav class="nav-section" aria-label="主导航">
+          <button class="nav-item active" data-view="dashboard">今日学习</button>
+          <button class="nav-item" data-view="chapters">知识章节</button>
+          <button class="nav-item" data-view="plan">30 天计划</button>
+          <button class="nav-item" data-view="interview">面试速背</button>
+          <button class="nav-item" data-view="terms">术语表</button>
+        </nav>
+
+        <div class="search-box">
+          <label for="searchInput">搜索知识点</label>
+          <input id="searchInput" type="search" placeholder="例如 CTR、TikTok、选品" />
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">从零基础到可面试</p>
+            <h2 id="pageTitle">今日学习</h2>
+          </div>
+          <div class="top-actions">
+            <button id="resetTodayBtn" class="ghost-btn" type="button">回到今天</button>
+            <button id="exportBtn" class="primary-btn" type="button">导出学习记录</button>
+          </div>
+        </header>
+
+        <section id="dashboardView" class="view active-view">
+          <div class="hero-panel">
+            <div>
+              <p class="eyebrow">今日任务</p>
+              <h3 id="todayTitle">Day 1</h3>
+              <p id="todaySubtitle">每天只做一小步，但必须有输出。</p>
+            </div>
+            <div class="hero-stats">
+              <div>
+                <span>已完成任务</span>
+                <strong id="todayDone">0/0</strong>
+              </div>
+              <div>
+                <span>当前阶段</span>
+                <strong id="todayPhase">基础</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="content-grid">
+            <section class="panel">
+              <div class="panel-head">
+                <h3>今日打卡清单</h3>
+                <button id="completeDayBtn" class="small-btn" type="button">完成今日</button>
+              </div>
+              <div id="todayTasks" class="task-list"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <h3>今日笔记</h3>
+                <span id="saveState">自动保存</span>
+              </div>
+              <textarea id="dailyNote" placeholder="写下今天学到的概念、案例、面试回答或疑问。"></textarea>
+            </section>
+          </div>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h3>今日推荐阅读</h3>
+              <button id="openReadingBtn" class="small-btn" type="button">打开章节</button>
+            </div>
+            <div id="readingPreview" class="reading-preview"></div>
+          </section>
+        </section>
+
+        <section id="chaptersView" class="view">
+          <div class="chapter-layout">
+            <div class="chapter-list" id="chapterList"></div>
+            <article class="reader" id="chapterReader"></article>
+          </div>
+        </section>
+
+        <section id="planView" class="view">
+          <div id="planGrid" class="plan-grid"></div>
+        </section>
+
+        <section id="interviewView" class="view">
+          <div class="focus-layout">
+            <article class="reader" id="interviewReader"></article>
+          </div>
+        </section>
+
+        <section id="termsView" class="view">
+          <div class="focus-layout">
+            <article class="reader" id="termsReader"></article>
+          </div>
+        </section>
+
+        <section id="searchView" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>搜索结果</h3>
+              <span id="searchCount">0 条</span>
+            </div>
+            <div id="searchResults" class="search-results"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./content.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
+
